@@ -20,11 +20,17 @@ package aws
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/pkg/errors"
 	"github.com/submariner-io/cloud-prepare/pkg/api"
+)
+
+const (
+	attempts = 3
+	waitTime = time.Duration(10)
 )
 
 func (ac *awsCloud) createAWSPeering(target *awsCloud, reporter api.Reporter) error {
@@ -54,16 +60,41 @@ func (ac *awsCloud) createAWSPeering(target *awsCloud, reporter api.Reporter) er
 		return errors.Wrapf(err, "unable to request VPC peering")
 	}
 
-	// TODO Wait
-	err = target.acceptPeering(peering.VpcPeeringConnectionId, reporter)
-	if err != nil {
-		reporter.Failed(err)
+	// Accept Peering Request
+	i := 0
+	for i = 0; i < attempts; i++ {
+		if i > 0 {
+			reporter.Started("Trying again to Accept peering")
+			time.Sleep(waitTime)
+		}
+		err = target.acceptPeering(peering.VpcPeeringConnectionId, reporter)
+		if err != nil {
+			reporter.Failed(err)
+			continue
+		} else {
+			break
+		}
+	}
+	if i == attempts {
 		return errors.Wrapf(err, "unable to accept VPC peering")
 	}
 
-	err = ac.createRoutesForPeering(target, sourceVpcID, targetVpcID, peering, reporter)
-	if err != nil {
-		reporter.Failed(err)
+	// Peering routes creation. It should create two routes (one per cluster) to forward
+	// the traffic between clusters throught the peering object based on CIDR blocks
+	for i = 0; i < attempts; i++ {
+		if i > 0 {
+			reporter.Started("Trying again to Create routes for VPC Peering")
+			time.Sleep(waitTime)
+		}
+		err = ac.createRoutesForPeering(target, sourceVpcID, targetVpcID, peering, reporter)
+		if err != nil {
+			reporter.Failed(err)
+			continue
+		} else {
+			break
+		}
+	}
+	if i == attempts {
 		return errors.Wrapf(err, "unable to create routes for VPC peering")
 	}
 
