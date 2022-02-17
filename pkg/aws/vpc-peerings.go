@@ -30,7 +30,7 @@ import (
 
 const (
 	attempts = 3
-	waitTime = time.Duration(10)
+	waitTime = 10
 )
 
 func (ac *awsCloud) createAWSPeering(target *awsCloud, reporter api.Reporter) error {
@@ -60,46 +60,28 @@ func (ac *awsCloud) createAWSPeering(target *awsCloud, reporter api.Reporter) er
 		return errors.Wrapf(err, "unable to request VPC peering")
 	}
 
-	// Accept Peering Request
-	i := 0
-	for i = 0; i < attempts; i++ {
-		if i > 0 {
-			reporter.Started("Trying again to Accept peering")
-			time.Sleep(waitTime)
-		}
-		err = target.acceptPeering(peering.VpcPeeringConnectionId, reporter)
-		if err != nil {
-			reporter.Failed(err)
-			continue
-		} else {
-			break
-		}
+	// Needed to retry the query to accept the peering in order to wait for AWS to create the peering resource in both environments
+	reporter.Started("Trying again to Accept peering")
+	acceptPeeringFn := func() error {
+		return target.acceptPeering(peering.VpcPeeringConnectionId, reporter)
 	}
-	if i == attempts {
+	err = runWithRetries(acceptPeeringFn)
+	if err != nil {
 		return errors.Wrapf(err, "unable to accept VPC peering")
 	}
 
 	// Peering routes creation. It should create two routes (one per cluster) to forward
 	// the traffic between clusters throught the peering object based on CIDR blocks
-	for i = 0; i < attempts; i++ {
-		if i > 0 {
-			reporter.Started("Trying again to Create routes for VPC Peering")
-			time.Sleep(waitTime)
-		}
-		err = ac.createRoutesForPeering(target, sourceVpcID, targetVpcID, peering, reporter)
-		if err != nil {
-			reporter.Failed(err)
-			continue
-		} else {
-			break
-		}
+	reporter.Started("Trying again to Create routes for VPC Peering")
+	createRoutesFn := func() error {
+		return ac.createRoutesForPeering(target, sourceVpcID, targetVpcID, peering, reporter)
 	}
-	if i == attempts {
+	err = runWithRetries(createRoutesFn)
+	if err != nil {
 		return errors.Wrapf(err, "unable to create routes for VPC peering")
 	}
 
 	reporter.Succeeded("Created VPC Peering")
-
 	return nil
 }
 
@@ -230,4 +212,18 @@ func (ac *awsCloud) getRouteTableID(vpcID string, reporter api.Reporter) (*strin
 	reporter.Succeeded("Retrieved RouteTableID %s", *routeTableID)
 
 	return routeTableID, nil
+}
+
+func runWithRetries(f func() error) error {
+	var err error
+	for retries := attempts; retries > 0; {
+		err = f()
+		if err != nil {
+			retries--
+			time.Sleep(waitTime * time.Second)
+		} else {
+			return nil
+		}
+	}
+	return err
 }
