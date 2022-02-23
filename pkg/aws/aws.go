@@ -142,7 +142,7 @@ func (ac *awsCloud) CreateVpcPeering(target api.Cloud, reporter api.Reporter) er
 	return ac.createAWSPeering(targetCloud, reporter)
 }
 
-// CleanupVpcPeering Removes the VPC Peering with the target cloud and the related Routes
+// CleanupVpcPeering Removes the VPC Peering with the target cloud and the related Routes.
 func (ac *awsCloud) CleanupVpcPeering(target api.Cloud, reporter api.Reporter) error {
 	targetCloud, ok := target.(*awsCloud)
 

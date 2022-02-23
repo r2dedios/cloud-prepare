@@ -18,55 +18,40 @@ limitations under the License.
 package aws
 
 import (
-	"github.com/aws/aws-sdk-go-v2/service/ec2"
-	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/submariner-io/cloud-prepare/pkg/api"
 )
 
-var _ = Describe("AWS Peering", func() {
-	Context("Accept Peering", testCreateVpcPeering)
+var _ = Describe("Cloud", func() {
+	Context("CreateVpcPeering", testCreateVpcPeering)
 })
 
 func testCreateVpcPeering() {
 	cloudA := newCloudTestDriver(infraID, region)
 	_ = Describe("VPC Peering", func() {
-		When("receiving a target Cloud", func() {
-			It("is an unsupported Cloud", func() {
-				invalidCloud := &fooCloud{}
+		When("called with a non-AWS Cloud", func() {
+			It("should return an error", func() {
+				invalidCloud := &invalidCloud{}
 				err := cloudA.cloud.CreateVpcPeering(invalidCloud, api.NewLoggingReporter())
-				Expect(err).Should(MatchError("only AWS clients are supported"))
+				Expect(err).To(HaveOccurred())
 			})
 		})
 	})
 }
 
-type fooCloud struct{}
+type invalidCloud struct{}
 
-func (f *fooCloud) PrepareForSubmariner(input api.PrepareForSubmarinerInput, reporter api.Reporter) error {
+func (f *invalidCloud) PrepareForSubmariner(input api.PrepareForSubmarinerInput, reporter api.Reporter) error {
 	panic("not implemented")
 }
 
-func (f *fooCloud) CreateVpcPeering(target api.Cloud, reporter api.Reporter) error {
+func (f *invalidCloud) CreateVpcPeering(target api.Cloud, reporter api.Reporter) error {
 	panic("not implemented")
 }
 
-func (f *fooCloud) CleanupAfterSubmariner(reporter api.Reporter) error {
+func (f *invalidCloud) CleanupAfterSubmariner(reporter api.Reporter) error {
 	panic("not implemented")
-}
-
-func getRouteTableFor(vpcID string) *ec2.DescribeRouteTablesOutput {
-	rtID := vpcID + "-rt"
-
-	return &ec2.DescribeRouteTablesOutput{
-		RouteTables: []types.RouteTable{
-			{
-				VpcId:        &vpcID,
-				RouteTableId: &rtID,
-			},
-		},
-	}
 }
 
 type cloudTestDriver struct {
@@ -86,4 +71,3 @@ func newCloudTestDriver(infraID, region string) *cloudTestDriver {
 
 	return t
 }
-

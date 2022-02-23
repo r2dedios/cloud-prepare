@@ -104,32 +104,12 @@ func (gc *gcpCloud) PrepareForSubmariner(input api.PrepareForSubmarinerInput, re
 // CreateVpcPeering Creates a VPC Peering to the target cloud. Only the same
 // Cloud Provider is supported.
 func (gc *gcpCloud) CreateVpcPeering(target api.Cloud, reporter api.Reporter) error {
-	//targetCloud, ok := target.(*gcpCloud)
-	_, ok := target.(*gcpCloud)
-
-	if !ok {
-		err := errors.New("only AWS clients are supported")
-		reporter.Failed(err)
-
-		return err
-	}
-
-	return errors.New("CreateVpcPeering not implemented")
+	return errors.New("GCP CreateVpcPeering not implemented")
 }
 
-// CleanupVpcPeering Removes the VPC Peering with the target cloud and the related Routes
-func (ac *gcpCloud) CleanupVpcPeering(target api.Cloud, reporter api.Reporter) error {
-	//targetCloud, ok := target.(*gcpCloud)
-	_, ok := target.(*gcpCloud)
-
-	if !ok {
-		err := errors.New("only AWS clients are supported")
-		reporter.Failed(err)
-
-		return err
-	}
-
-	return errors.New("CleanupVpcPeering not implemented")
+// CleanupVpcPeering Removes the VPC Peering with the target cloud and the related Routes.
+func (gc *gcpCloud) CleanupVpcPeering(target api.Cloud, reporter api.Reporter) error {
+	return errors.New("GCP CleanupVpcPeering not implemented")
 }
 
 // CleanupAfterSubmariner clean up submariner cluster environment on GCP.

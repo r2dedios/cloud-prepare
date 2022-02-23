@@ -29,22 +29,22 @@ import (
 	"github.com/submariner-io/cloud-prepare/pkg/api"
 )
 
-var _ = Describe("AWS Peering", func() {
-	Context("Test Validate Peering Prerequisites", testValidatePeeringPrerequisites)
-	Context("Test Check VPC Overlap", testCheckVpcOverlap)
-	Context("Test Determine Permission Error", testDeterminePermissionError)
+var _ = Describe("Validations", func() {
+	Context("ValidatePeeringPrerequisites", testValidatePeeringPrerequisites)
+	Context("CheckVpcOverlap", testCheckVpcOverlap)
+	Context("DeterminePermissionError", testDeterminePermissionError)
 })
 
 func testDeterminePermissionError() {
-	var _ = Describe("Validate error input", func() {
-		When("Args are wrong", func() {
-			It("err is nil", func() {
-				result := determinePermissionError(nil, "")
-				Expect(result).To(BeNil())
+	Describe("Validate error input", func() {
+		When("error is nil", func() {
+			It("should return nil", func() {
+				err := determinePermissionError(nil, "")
+				Expect(err).To(BeNil())
 			})
 		})
-		When("It's an AWS error", func() {
-			It("is DryRunOperation error", func() {
+		When("called with an AWS DryRunOperation error", func() {
+			It("should return nil", func() {
 				err := smithy.GenericAPIError{
 					Code:    "DryRunOperation",
 					Message: "DryRunOperation",
@@ -52,9 +52,11 @@ func testDeterminePermissionError() {
 				}
 				operation := "check"
 				result := determinePermissionError(&err, operation)
-				Expect(result).Should(BeNil())
+				Expect(result).To(BeNil())
 			})
-			It("is UnauthorizedOperation error", func() {
+		})
+		When("called with an AWS UnauthorizedOperation error", func() {
+			It("should return an appropriate error", func() {
 				err := smithy.GenericAPIError{
 					Code:    "UnauthorizedOperation",
 					Message: "UnauthorizedOperation",
@@ -62,15 +64,15 @@ func testDeterminePermissionError() {
 				}
 				operation := "check"
 				result := determinePermissionError(&err, operation)
-				Expect(result).Should(
+				Expect(result).To(
 					MatchError(
 						MatchRegexp("no permission to " + operation),
 					),
 				)
 			})
 		})
-		When("It's not an AWS error", func() {
-			It("is a Generic Error", func() {
+		When("called with a general error", func() {
+			It("should return an appropriate error", func() {
 				err := smithy.GenericAPIError{
 					Code:    "Generic Error",
 					Message: "Generic Error",
@@ -78,7 +80,7 @@ func testDeterminePermissionError() {
 				}
 				operation := ""
 				result := determinePermissionError(&err, operation)
-				Expect(result).Should(
+				Expect(result).To(
 					MatchError(
 						MatchRegexp("error while checking permissions for " + operation),
 					),
@@ -91,9 +93,10 @@ func testDeterminePermissionError() {
 func testValidatePeeringPrerequisites() {
 	cloudA := newCloudTestDriver(infraID, region)
 	cloudB := newCloudTestDriver(targetInfraID, targetRegion)
-	var _ = Describe("Validate Validate Peering Prerequisites", func() {
+
+	Describe("Validate Validate Peering Prerequisites", func() {
 		When("trying to retrieve the VPC", func() {
-			It("cannot retrieve the source VPC", func() {
+			It("should not retrieve the source VPC", func() {
 				cloudA.awsClient.EXPECT().DescribeVpcs(context.TODO(), gomock.Any()).
 					Return(
 						&ec2.DescribeVpcsOutput{
@@ -105,13 +108,9 @@ func testValidatePeeringPrerequisites() {
 				Expect(ok).To(BeTrue())
 				err := awsCloudA.validatePeeringPrerequisites(awsCloudB, api.NewLoggingReporter())
 
-				Expect(err).Should(HaveOccurred())
-				Expect(err).Should(MatchError(And(
-					MatchRegexp("unable to validate vpc peering prerequisites for source"),
-					MatchRegexp("not found VPC test-infraID-vpc"),
-				)))
+				Expect(err).To(HaveOccurred())
 			})
-			It("cannot retrieve the target VPC", func() {
+			It("should not retrieve the target VPC", func() {
 				cloudA.awsClient.EXPECT().DescribeVpcs(context.TODO(), gomock.Any()).
 					Return(getVpcOutputFor("vpc-a", "1.2.3.4/16"), nil)
 				cloudB.awsClient.EXPECT().DescribeVpcs(context.TODO(), gomock.Any()).
@@ -125,15 +124,11 @@ func testValidatePeeringPrerequisites() {
 				Expect(ok).To(BeTrue())
 				err := awsCloudA.validatePeeringPrerequisites(awsCloudB, api.NewLoggingReporter())
 
-				Expect(err).Should(HaveOccurred())
-				Expect(err).Should(MatchError(And(
-					MatchRegexp("unable to validate vpc peering prerequisites for target"),
-					MatchRegexp("not found VPC other-infraID-vpc"),
-				)))
+				Expect(err).To(HaveOccurred())
 			})
 		})
 		When("checking if VPCs overlap", func() {
-			It("fails with an invalid CIDR Block", func() {
+			It("should fail with an invalid CIDR Block", func() {
 				cloudA.awsClient.EXPECT().DescribeVpcs(context.TODO(), gomock.Any()).
 					Return(getVpcOutputFor("vpc-a", "make it fail"), nil)
 				cloudB.awsClient.EXPECT().DescribeVpcs(context.TODO(), gomock.Any()).
@@ -144,10 +139,9 @@ func testValidatePeeringPrerequisites() {
 				Expect(ok).To(BeTrue())
 				err := awsCloudA.validatePeeringPrerequisites(awsCloudB, api.NewLoggingReporter())
 
-				Expect(err).Should(HaveOccurred())
-				Expect(err.Error()).Should(ContainSubstring("invalid CIDR address: make it fail"))
+				Expect(err).To(HaveOccurred())
 			})
-			It("fails with overlapping CIDR BLocks", func() {
+			It("should fail with overlapping CIDR BLocks", func() {
 				cloudA.awsClient.EXPECT().DescribeVpcs(context.TODO(), gomock.Any()).
 					Return(getVpcOutputFor("vpc-a", "1.2.3.4/16"), nil)
 				cloudB.awsClient.EXPECT().DescribeVpcs(context.TODO(), gomock.Any()).
@@ -158,12 +152,11 @@ func testValidatePeeringPrerequisites() {
 				Expect(ok).To(BeTrue())
 				err := awsCloudA.validatePeeringPrerequisites(awsCloudB, api.NewLoggingReporter())
 
-				Expect(err).Should(HaveOccurred())
-				Expect(err).Should(MatchError("source [1.2.3.4/16] and target [1.2.3.4/16] CIDR Blocks must not overlap"))
+				Expect(err).To(HaveOccurred())
 			})
 		})
 		When("requirements are met", func() {
-			It("returns with no error", func() {
+			It("should not return an error", func() {
 				cloudA.awsClient.EXPECT().DescribeVpcs(context.TODO(), gomock.Any()).
 					Return(getVpcOutputFor("vpc-a", "10.0.0.0/16"), nil)
 				cloudB.awsClient.EXPECT().DescribeVpcs(context.TODO(), gomock.Any()).
@@ -174,19 +167,17 @@ func testValidatePeeringPrerequisites() {
 				Expect(ok).To(BeTrue())
 				err := awsCloudA.validatePeeringPrerequisites(awsCloudB, api.NewLoggingReporter())
 
-				Expect(err).ShouldNot(HaveOccurred())
+				Expect(err).ToNot(HaveOccurred())
 			})
 		})
 	})
 }
 
 func testCheckVpcOverlap() {
-	var _ = Describe("Validate CIDR Blocks", func() {
-		When("Invalid CIDR block", func() {
-			var (
-				vpcA, vpcB *types.Vpc
-			)
-			It("netA is invalid", func() {
+	Describe("Validate CIDR Blocks", func() {
+		When("an invalid CIDR block is provided", func() {
+			var vpcA, vpcB *types.Vpc
+			It("should fail when the left CIDR block is invalid", func() {
 				netA := "1.2.3.4/-1"
 				netB := "10.0.0.0/16"
 				vpcA = &types.Vpc{CidrBlock: &netA}
@@ -195,7 +186,7 @@ func testCheckVpcOverlap() {
 				Expect(response).To(BeFalse())
 				Expect(err).NotTo(BeNil())
 			})
-			It("netB is invalid", func() {
+			It("should fail when the right CIDR block is invalid", func() {
 				netA := "10.0.0.0/16"
 				netB := "1.2.3.4/-1"
 				vpcA = &types.Vpc{CidrBlock: &netA}
@@ -205,11 +196,9 @@ func testCheckVpcOverlap() {
 				Expect(err).NotTo(BeNil())
 			})
 		})
-		When("CIDR blocks not overlap", func() {
-			var (
-				vpcA, vpcB *types.Vpc
-			)
-			It("Same mask different subnet", func() {
+		When("valid CIDR blocks are provided", func() {
+			var vpcA, vpcB *types.Vpc
+			It("should return false for non overlapping subnets", func() {
 				netA := "10.0.0.0/16"
 				netB := "10.1.0.0/16"
 				vpcA = &types.Vpc{CidrBlock: &netA}
@@ -219,10 +208,8 @@ func testCheckVpcOverlap() {
 			})
 		})
 		When("CIDR blocks overlap", func() {
-			var (
-				vpcA, vpcB *types.Vpc
-			)
-			It("Same CIDR", func() {
+			var vpcA, vpcB *types.Vpc
+			It("should fail when the same CIDR blocks are provided", func() {
 				netA := "10.0.0.0/16"
 				netB := "10.0.0.0/16"
 				vpcA = &types.Vpc{CidrBlock: &netA}
@@ -230,7 +217,7 @@ func testCheckVpcOverlap() {
 				response, _ := CheckVpcOverlap(vpcA, vpcB)
 				Expect(response).To(BeTrue())
 			})
-			It("Same mask different subnet", func() {
+			It("should fail when different overlapping blocks are provided", func() {
 				netA := "10.0.0.0/12"
 				netB := "10.1.0.0/12"
 				vpcA = &types.Vpc{CidrBlock: &netA}
@@ -238,7 +225,7 @@ func testCheckVpcOverlap() {
 				response, _ := CheckVpcOverlap(vpcA, vpcB)
 				Expect(response).To(BeTrue())
 			})
-			It("Specify IP in all CIDR block", func() {
+			It("should fail when one CIDR block is an IP part of the other CIDR block", func() {
 				netA := "192.168.0.1/32"
 				netB := "0.0.0.0/0"
 				vpcA = &types.Vpc{CidrBlock: &netA}
