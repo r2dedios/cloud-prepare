@@ -142,6 +142,20 @@ func (ac *awsCloud) CreateVpcPeering(target api.Cloud, reporter api.Reporter) er
 	return ac.createAWSPeering(targetCloud, reporter)
 }
 
+// CleanupVpcPeering Removes the VPC Peering with the target cloud and the related Routes
+func (ac *awsCloud) CleanupVpcPeering(target api.Cloud, reporter api.Reporter) error {
+	targetCloud, ok := target.(*awsCloud)
+
+	if !ok {
+		err := errors.Errorf("only AWS clients are supported")
+		reporter.Failed(err)
+
+		return err
+	}
+
+	return ac.cleanupVpcPeering(targetCloud, reporter)
+}
+
 func (ac *awsCloud) CleanupAfterSubmariner(reporter api.Reporter) error {
 	reporter.Started(messageRetrieveVPCID)
 

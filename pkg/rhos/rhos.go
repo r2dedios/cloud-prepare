@@ -89,11 +89,30 @@ func (rc *rhosCloud) CleanupAfterSubmariner(reporter api.Reporter) error {
 }
 
 func (rc *rhosCloud) CreateVpcPeering(target api.Cloud, reporter api.Reporter) error {
-	switch target.(type) {
-	case *rhosCloud:
-		// TODO: implement me
-		return nil
-	default:
-		return errors.Errorf("only RHOS clients are supported")
+	//targetCloud, ok := target.(*gcpCloud)
+	_, ok := target.(*rhosCloud)
+
+	if !ok {
+		err := errors.New("only AWS clients are supported")
+		reporter.Failed(err)
+
+		return err
 	}
+
+	return errors.New("CreateVpcPeering not implemented")
+}
+
+// CleanupVpcPeering Removes the VPC Peering with the target cloud and the related Routes
+func (ac *rhosCloud) CleanupVpcPeering(target api.Cloud, reporter api.Reporter) error {
+	//targetCloud, ok := target.(*gcpCloud)
+	_, ok := target.(*rhosCloud)
+
+	if !ok {
+		err := errors.New("only AWS clients are supported")
+		reporter.Failed(err)
+
+		return err
+	}
+
+	return errors.New("CleanupVpcPeering not implemented")
 }

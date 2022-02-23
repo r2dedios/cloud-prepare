@@ -60,10 +60,16 @@ type Interface interface {
 		optFns ...func(*ec2.Options)) (*ec2.DescribeInstanceTypeOfferingsOutput, error)
 	DescribeRouteTables(ctx context.Context, input *ec2.DescribeRouteTablesInput,
 		optFns ...func(*ec2.Options)) (*ec2.DescribeRouteTablesOutput, error)
+	DescribeVpcPeeringConnections(ctx context.Context, input *ec2.DescribeVpcPeeringConnectionsInput,
+		optFns ...func(*ec2.Options)) (*ec2.DescribeVpcPeeringConnectionsOutput, error)
 
+	DeleteRoute(ctx context.Context, params *ec2.DeleteRouteInput,
+		optFns ...func(*ec2.Options)) (*ec2.DeleteRouteOutput, error)
 	DeleteSecurityGroup(ctx context.Context, params *ec2.DeleteSecurityGroupInput,
 		optFns ...func(*ec2.Options)) (*ec2.DeleteSecurityGroupOutput, error)
 	DeleteTags(ctx context.Context, params *ec2.DeleteTagsInput, optFns ...func(*ec2.Options)) (*ec2.DeleteTagsOutput, error)
+	DeleteVpcPeeringConnection(ctx context.Context, params *ec2.DeleteVpcPeeringConnectionInput,
+		optFns ...func(*ec2.Options)) (*ec2.DeleteVpcPeeringConnectionOutput, error)
 
 	RevokeSecurityGroupIngress(ctx context.Context, params *ec2.RevokeSecurityGroupIngressInput,
 		optFns ...func(*ec2.Options)) (*ec2.RevokeSecurityGroupIngressOutput, error)
@@ -128,6 +134,16 @@ func (ac *awsClient) DescribeRouteTables(ctx context.Context, input *ec2.Describ
 	return ac.ec2Client.DescribeRouteTables(ctx, input, optFns...)
 }
 
+func (ac *awsClient) DescribeVpcPeeringConnections(ctx context.Context, input *ec2.DescribeVpcPeeringConnectionsInput,
+	optFns ...func(*ec2.Options)) (*ec2.DescribeVpcPeeringConnectionsOutput, error) {
+	return ac.ec2Client.DescribeVpcPeeringConnections(ctx, input, optFns...)
+}
+
+func (ac *awsClient) DeleteRoute(ctx context.Context, input *ec2.DeleteRouteInput,
+	optFns ...func(*ec2.Options)) (*ec2.DeleteRouteOutput, error) {
+	return ac.ec2Client.DeleteRoute(ctx, input, optFns...)
+}
+
 func (ac *awsClient) DeleteSecurityGroup(ctx context.Context, input *ec2.DeleteSecurityGroupInput,
 	optFns ...func(*ec2.Options)) (*ec2.DeleteSecurityGroupOutput, error) {
 	return ac.ec2Client.DeleteSecurityGroup(ctx, input, optFns...)
@@ -136,6 +152,12 @@ func (ac *awsClient) DeleteSecurityGroup(ctx context.Context, input *ec2.DeleteS
 func (ac *awsClient) DeleteTags(ctx context.Context, input *ec2.DeleteTagsInput,
 	optFns ...func(*ec2.Options)) (*ec2.DeleteTagsOutput, error) {
 	return ac.ec2Client.DeleteTags(ctx, input, optFns...)
+}
+
+func (ac *awsClient) DeleteVpcPeeringConnection(ctx context.Context,
+	input *ec2.DeleteVpcPeeringConnectionInput,
+	optsFns ...func(*ec2.Options)) (*ec2.DeleteVpcPeeringConnectionOutput, error) {
+	return ac.ec2Client.DeleteVpcPeeringConnection(ctx, input, optsFns...)
 }
 
 func (ac *awsClient) RevokeSecurityGroupIngress(ctx context.Context, input *ec2.RevokeSecurityGroupIngressInput,

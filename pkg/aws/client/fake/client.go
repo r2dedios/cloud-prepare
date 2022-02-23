@@ -155,6 +155,26 @@ func (mr *MockInterfaceMockRecorder) CreateVpcPeeringConnection(ctx, input inter
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateVpcPeeringConnection", reflect.TypeOf((*MockInterface)(nil).CreateVpcPeeringConnection), varargs...)
 }
 
+// DeleteRoute mocks base method.
+func (m *MockInterface) DeleteRoute(ctx context.Context, params *ec2.DeleteRouteInput, optFns ...func(*ec2.Options)) (*ec2.DeleteRouteOutput, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, params}
+	for _, a := range optFns {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "DeleteRoute", varargs...)
+	ret0, _ := ret[0].(*ec2.DeleteRouteOutput)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeleteRoute indicates an expected call of DeleteRoute.
+func (mr *MockInterfaceMockRecorder) DeleteRoute(ctx, params interface{}, optFns ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, params}, optFns...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteRoute", reflect.TypeOf((*MockInterface)(nil).DeleteRoute), varargs...)
+}
+
 // DeleteSecurityGroup mocks base method.
 func (m *MockInterface) DeleteSecurityGroup(ctx context.Context, params *ec2.DeleteSecurityGroupInput, optFns ...func(*ec2.Options)) (*ec2.DeleteSecurityGroupOutput, error) {
 	m.ctrl.T.Helper()
@@ -193,6 +213,26 @@ func (mr *MockInterfaceMockRecorder) DeleteTags(ctx, params interface{}, optFns 
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, params}, optFns...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteTags", reflect.TypeOf((*MockInterface)(nil).DeleteTags), varargs...)
+}
+
+// DeleteVpcPeeringConnection mocks base method.
+func (m *MockInterface) DeleteVpcPeeringConnection(ctx context.Context, params *ec2.DeleteVpcPeeringConnectionInput, optFns ...func(*ec2.Options)) (*ec2.DeleteVpcPeeringConnectionOutput, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, params}
+	for _, a := range optFns {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "DeleteVpcPeeringConnection", varargs...)
+	ret0, _ := ret[0].(*ec2.DeleteVpcPeeringConnectionOutput)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeleteVpcPeeringConnection indicates an expected call of DeleteVpcPeeringConnection.
+func (mr *MockInterfaceMockRecorder) DeleteVpcPeeringConnection(ctx, params interface{}, optFns ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, params}, optFns...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteVpcPeeringConnection", reflect.TypeOf((*MockInterface)(nil).DeleteVpcPeeringConnection), varargs...)
 }
 
 // DescribeInstanceTypeOfferings mocks base method.
@@ -293,6 +333,26 @@ func (mr *MockInterfaceMockRecorder) DescribeSubnets(ctx, params interface{}, op
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, params}, optFns...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DescribeSubnets", reflect.TypeOf((*MockInterface)(nil).DescribeSubnets), varargs...)
+}
+
+// DescribeVpcPeeringConnections mocks base method.
+func (m *MockInterface) DescribeVpcPeeringConnections(ctx context.Context, input *ec2.DescribeVpcPeeringConnectionsInput, optFns ...func(*ec2.Options)) (*ec2.DescribeVpcPeeringConnectionsOutput, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, input}
+	for _, a := range optFns {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "DescribeVpcPeeringConnections", varargs...)
+	ret0, _ := ret[0].(*ec2.DescribeVpcPeeringConnectionsOutput)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DescribeVpcPeeringConnections indicates an expected call of DescribeVpcPeeringConnections.
+func (mr *MockInterfaceMockRecorder) DescribeVpcPeeringConnections(ctx, input interface{}, optFns ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, input}, optFns...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DescribeVpcPeeringConnections", reflect.TypeOf((*MockInterface)(nil).DescribeVpcPeeringConnections), varargs...)
 }
 
 // DescribeVpcs mocks base method.

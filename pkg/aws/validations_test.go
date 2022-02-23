@@ -113,7 +113,7 @@ func testValidatePeeringPrerequisites() {
 			})
 			It("cannot retrieve the target VPC", func() {
 				cloudA.awsClient.EXPECT().DescribeVpcs(context.TODO(), gomock.Any()).
-					Return(getVpcOutputFor("vpc-a", "1.2.3.4/16"))
+					Return(getVpcOutputFor("vpc-a", "1.2.3.4/16"), nil)
 				cloudB.awsClient.EXPECT().DescribeVpcs(context.TODO(), gomock.Any()).
 					Return(
 						&ec2.DescribeVpcsOutput{
@@ -135,9 +135,9 @@ func testValidatePeeringPrerequisites() {
 		When("checking if VPCs overlap", func() {
 			It("fails with an invalid CIDR Block", func() {
 				cloudA.awsClient.EXPECT().DescribeVpcs(context.TODO(), gomock.Any()).
-					Return(getVpcOutputFor("vpc-a", "make it fail"))
+					Return(getVpcOutputFor("vpc-a", "make it fail"), nil)
 				cloudB.awsClient.EXPECT().DescribeVpcs(context.TODO(), gomock.Any()).
-					Return(getVpcOutputFor("vpc-b", "1.2.3.4/16"))
+					Return(getVpcOutputFor("vpc-b", "1.2.3.4/16"), nil)
 				awsCloudA, ok := cloudA.cloud.(*awsCloud)
 				Expect(ok).To(BeTrue())
 				awsCloudB, ok := cloudB.cloud.(*awsCloud)
@@ -145,13 +145,13 @@ func testValidatePeeringPrerequisites() {
 				err := awsCloudA.validatePeeringPrerequisites(awsCloudB, api.NewLoggingReporter())
 
 				Expect(err).Should(HaveOccurred())
-				Expect(err).Should(MatchError("invalid CIDR address: make it fail"))
+				Expect(err.Error()).Should(ContainSubstring("invalid CIDR address: make it fail"))
 			})
 			It("fails with overlapping CIDR BLocks", func() {
 				cloudA.awsClient.EXPECT().DescribeVpcs(context.TODO(), gomock.Any()).
-					Return(getVpcOutputFor("vpc-a", "1.2.3.4/16"))
+					Return(getVpcOutputFor("vpc-a", "1.2.3.4/16"), nil)
 				cloudB.awsClient.EXPECT().DescribeVpcs(context.TODO(), gomock.Any()).
-					Return(getVpcOutputFor("vpc-b", "1.2.3.4/16"))
+					Return(getVpcOutputFor("vpc-b", "1.2.3.4/16"), nil)
 				awsCloudA, ok := cloudA.cloud.(*awsCloud)
 				Expect(ok).To(BeTrue())
 				awsCloudB, ok := cloudB.cloud.(*awsCloud)
@@ -165,9 +165,9 @@ func testValidatePeeringPrerequisites() {
 		When("requirements are met", func() {
 			It("returns with no error", func() {
 				cloudA.awsClient.EXPECT().DescribeVpcs(context.TODO(), gomock.Any()).
-					Return(getVpcOutputFor("vpc-a", "10.0.0.0/16"))
+					Return(getVpcOutputFor("vpc-a", "10.0.0.0/16"), nil)
 				cloudB.awsClient.EXPECT().DescribeVpcs(context.TODO(), gomock.Any()).
-					Return(getVpcOutputFor("vpc-b", "10.1.0.0/16"))
+					Return(getVpcOutputFor("vpc-b", "10.1.0.0/16"), nil)
 				awsCloudA, ok := cloudA.cloud.(*awsCloud)
 				Expect(ok).To(BeTrue())
 				awsCloudB, ok := cloudB.cloud.(*awsCloud)
