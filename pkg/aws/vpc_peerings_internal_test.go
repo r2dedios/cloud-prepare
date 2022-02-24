@@ -140,44 +140,42 @@ func testRequestPeering() {
 	var awsCloudA, awsCloudB *awsCloud
 	var ok bool
 
-	Describe("Validate Peering request", func() {
-		BeforeEach(func() {
-			awsCloudA, ok = cloudA.cloud.(*awsCloud)
-			Expect(ok).To(BeTrue())
-			awsCloudB, ok = cloudB.cloud.(*awsCloud)
-			Expect(ok).To(BeTrue())
-		})
-		When("request a Peering Request", func() {
-			It("should request it", func() {
-				cloudA.awsClient.EXPECT().CreateVpcPeeringConnection(context.TODO(), gomock.Any()).
-					Return(&ec2.CreateVpcPeeringConnectionOutput{
-						VpcPeeringConnection: &types.VpcPeeringConnection{
-							RequesterVpcInfo: &types.VpcPeeringConnectionVpcInfo{
-								VpcId:  &vpcA,
-								Region: &awsCloudA.region,
-							},
-							VpcPeeringConnectionId: &vpcPeeringID,
+	BeforeEach(func() {
+		awsCloudA, ok = cloudA.cloud.(*awsCloud)
+		Expect(ok).To(BeTrue())
+		awsCloudB, ok = cloudB.cloud.(*awsCloud)
+		Expect(ok).To(BeTrue())
+	})
+	When("request a Peering Request", func() {
+		It("should request it", func() {
+			cloudA.awsClient.EXPECT().CreateVpcPeeringConnection(context.TODO(), gomock.Any()).
+				Return(&ec2.CreateVpcPeeringConnectionOutput{
+					VpcPeeringConnection: &types.VpcPeeringConnection{
+						RequesterVpcInfo: &types.VpcPeeringConnectionVpcInfo{
+							VpcId:  &vpcA,
+							Region: &awsCloudA.region,
 						},
-					}, nil)
+						VpcPeeringConnectionId: &vpcPeeringID,
+					},
+				}, nil)
 
-				vpcPeering, err := awsCloudA.requestPeering(vpcA, vpcB, awsCloudB, api.NewLoggingReporter())
+			vpcPeering, err := awsCloudA.requestPeering(vpcA, vpcB, awsCloudB, api.NewLoggingReporter())
 
-				Expect(err).To(BeNil())
-				Expect(vpcPeering).NotTo(BeNil())
-				Expect(*vpcPeering.RequesterVpcInfo.Region).To(Equal(awsCloudA.region))
-				Expect(*vpcPeering.RequesterVpcInfo.VpcId).To(Equal(vpcA))
-			})
-			It("should not request a VPC peering", func() {
-				errMsg := "unable to request VPC peering"
+			Expect(err).To(BeNil())
+			Expect(vpcPeering).NotTo(BeNil())
+			Expect(*vpcPeering.RequesterVpcInfo.Region).To(Equal(awsCloudA.region))
+			Expect(*vpcPeering.RequesterVpcInfo.VpcId).To(Equal(vpcA))
+		})
+		It("should not request a VPC peering", func() {
+			errMsg := "unable to request VPC peering"
 
-				cloudA.awsClient.EXPECT().CreateVpcPeeringConnection(context.TODO(), gomock.Any()).
-					Return(nil, errors.New(errMsg))
+			cloudA.awsClient.EXPECT().CreateVpcPeeringConnection(context.TODO(), gomock.Any()).
+				Return(nil, errors.New(errMsg))
 
-				vpcPeering, err := awsCloudA.requestPeering(vpcA, vpcB, awsCloudB, api.NewLoggingReporter())
+			vpcPeering, err := awsCloudA.requestPeering(vpcA, vpcB, awsCloudB, api.NewLoggingReporter())
 
-				Expect(err).To(MatchError(MatchRegexp(errMsg)))
-				Expect(vpcPeering).To(BeNil())
-			})
+			Expect(err).To(MatchError(MatchRegexp(errMsg)))
+			Expect(vpcPeering).To(BeNil())
 		})
 	})
 }
@@ -188,26 +186,24 @@ func testAcceptPeering() {
 	var awsCloudA *awsCloud
 	var ok bool
 
-	Describe("Validate Accept peering process", func() {
-		BeforeEach(func() {
-			awsCloudA, ok = cloudA.cloud.(*awsCloud)
-			Expect(ok).To(BeTrue())
+	BeforeEach(func() {
+		awsCloudA, ok = cloudA.cloud.(*awsCloud)
+		Expect(ok).To(BeTrue())
+	})
+	When("trying to accept a Peering Request", func() {
+		It("should accept it", func() {
+			cloudA.awsClient.EXPECT().AcceptVpcPeeringConnection(context.TODO(), gomock.Any()).
+				Return(nil, nil)
+
+			err := awsCloudA.acceptPeering(&peeringID, api.NewLoggingReporter())
+			Expect(err).To(BeNil())
 		})
-		When("trying to accept a Peering Request", func() {
-			It("should accept it", func() {
-				cloudA.awsClient.EXPECT().AcceptVpcPeeringConnection(context.TODO(), gomock.Any()).
-					Return(nil, nil)
+		It("should not accept it", func() {
+			cloudA.awsClient.EXPECT().AcceptVpcPeeringConnection(context.TODO(), gomock.Any()).
+				Return(nil, errors.New("Accept Peering Error"))
 
-				err := awsCloudA.acceptPeering(&peeringID, api.NewLoggingReporter())
-				Expect(err).To(BeNil())
-			})
-			It("should not accept it", func() {
-				cloudA.awsClient.EXPECT().AcceptVpcPeeringConnection(context.TODO(), gomock.Any()).
-					Return(nil, errors.New("Accept Peering Error"))
-
-				err := awsCloudA.acceptPeering(&peeringID, api.NewLoggingReporter())
-				Expect(err).NotTo(BeNil())
-			})
+			err := awsCloudA.acceptPeering(&peeringID, api.NewLoggingReporter())
+			Expect(err).NotTo(BeNil())
 		})
 	})
 }
@@ -230,73 +226,71 @@ func testCreateRoutesForPeering() {
 	var awsCloudA, awsCloudB *awsCloud
 	var ok bool
 
-	Describe("Validate error input", func() {
-		BeforeEach(func() {
-			awsCloudA, ok = cloudA.cloud.(*awsCloud)
-			Expect(ok).To(BeTrue())
-			awsCloudB, ok = cloudB.cloud.(*awsCloud)
-			Expect(ok).To(BeTrue())
+	BeforeEach(func() {
+		awsCloudA, ok = cloudA.cloud.(*awsCloud)
+		Expect(ok).To(BeTrue())
+		awsCloudB, ok = cloudB.cloud.(*awsCloud)
+		Expect(ok).To(BeTrue())
+	})
+	When("creating routes for peering", func() {
+		It("should create them", func() {
+			cloudA.awsClient.EXPECT().DescribeRouteTables(context.TODO(), gomock.Any()).
+				Return(getRouteTableFor(vpcA), nil)
+			cloudB.awsClient.EXPECT().DescribeRouteTables(context.TODO(), gomock.Any()).
+				Return(getRouteTableFor(vpcB), nil)
+			cloudA.awsClient.EXPECT().CreateRoute(context.TODO(), gomock.Any()).
+				Return(nil, nil)
+			cloudB.awsClient.EXPECT().CreateRoute(context.TODO(), gomock.Any()).
+				Return(nil, nil)
+
+			err := awsCloudA.createRoutesForPeering(awsCloudB, vpcA, vpcB, &peering, api.NewLoggingReporter())
+
+			Expect(err).To(BeNil())
 		})
-		When("creating routes for peering", func() {
-			It("should create them", func() {
-				cloudA.awsClient.EXPECT().DescribeRouteTables(context.TODO(), gomock.Any()).
-					Return(getRouteTableFor(vpcA), nil)
-				cloudB.awsClient.EXPECT().DescribeRouteTables(context.TODO(), gomock.Any()).
-					Return(getRouteTableFor(vpcB), nil)
-				cloudA.awsClient.EXPECT().CreateRoute(context.TODO(), gomock.Any()).
-					Return(nil, nil)
-				cloudB.awsClient.EXPECT().CreateRoute(context.TODO(), gomock.Any()).
-					Return(nil, nil)
+		It("should not create route on the requester", func() {
+			cloudA.awsClient.EXPECT().DescribeRouteTables(context.TODO(), gomock.Any()).
+				Return(getRouteTableFor(vpcA), nil)
+			cloudA.awsClient.EXPECT().CreateRoute(context.TODO(), gomock.Any()).
+				Return(nil, errors.New("can't create route"))
 
-				err := awsCloudA.createRoutesForPeering(awsCloudB, vpcA, vpcB, &peering, api.NewLoggingReporter())
+			err := awsCloudA.createRoutesForPeering(awsCloudB, vpcA, vpcB, &peering, api.NewLoggingReporter())
 
-				Expect(err).To(BeNil())
-			})
-			It("should not create route on the requester", func() {
-				cloudA.awsClient.EXPECT().DescribeRouteTables(context.TODO(), gomock.Any()).
-					Return(getRouteTableFor(vpcA), nil)
-				cloudA.awsClient.EXPECT().CreateRoute(context.TODO(), gomock.Any()).
-					Return(nil, errors.New("can't create route"))
+			Expect(err).NotTo(BeNil())
+			Expect(err).To(MatchError(MatchRegexp("unable to create route for " + vpcA)))
+		})
+		It("should not create the route on the accepter", func() {
+			cloudA.awsClient.EXPECT().DescribeRouteTables(context.TODO(), gomock.Any()).
+				Return(getRouteTableFor(vpcA), nil)
+			cloudB.awsClient.EXPECT().DescribeRouteTables(context.TODO(), gomock.Any()).
+				Return(getRouteTableFor(vpcB), nil)
+			cloudA.awsClient.EXPECT().CreateRoute(context.TODO(), gomock.Any()).
+				Return(nil, nil)
+			cloudB.awsClient.EXPECT().CreateRoute(context.TODO(), gomock.Any()).
+				Return(nil, errors.New("Can't create route"))
 
-				err := awsCloudA.createRoutesForPeering(awsCloudB, vpcA, vpcB, &peering, api.NewLoggingReporter())
+			err := awsCloudA.createRoutesForPeering(awsCloudB, vpcA, vpcB, &peering, api.NewLoggingReporter())
 
-				Expect(err).NotTo(BeNil())
-				Expect(err).To(MatchError(MatchRegexp("unable to create route for " + vpcA)))
-			})
-			It("should not create the route on the accepter", func() {
-				cloudA.awsClient.EXPECT().DescribeRouteTables(context.TODO(), gomock.Any()).
-					Return(getRouteTableFor(vpcA), nil)
-				cloudB.awsClient.EXPECT().DescribeRouteTables(context.TODO(), gomock.Any()).
-					Return(getRouteTableFor(vpcB), nil)
-				cloudA.awsClient.EXPECT().CreateRoute(context.TODO(), gomock.Any()).
-					Return(nil, nil)
-				cloudB.awsClient.EXPECT().CreateRoute(context.TODO(), gomock.Any()).
-					Return(nil, errors.New("Can't create route"))
+			Expect(err).NotTo(BeNil())
+		})
+		It("should not get the requester route table", func() {
+			cloudA.awsClient.EXPECT().DescribeRouteTables(context.TODO(), gomock.Any()).
+				Return(nil, errors.New("unable to create route for "+vpcA))
 
-				err := awsCloudA.createRoutesForPeering(awsCloudB, vpcA, vpcB, &peering, api.NewLoggingReporter())
+			err := awsCloudA.createRoutesForPeering(awsCloudB, vpcA, vpcB, &peering, api.NewLoggingReporter())
 
-				Expect(err).NotTo(BeNil())
-			})
-			It("should not get the requester route table", func() {
-				cloudA.awsClient.EXPECT().DescribeRouteTables(context.TODO(), gomock.Any()).
-					Return(nil, errors.New("unable to create route for "+vpcA))
+			Expect(err).NotTo(BeNil())
+		})
+		It("should not get the accepter route table", func() {
+			cloudA.awsClient.EXPECT().DescribeRouteTables(context.TODO(), gomock.Any()).
+				Return(getRouteTableFor(vpcA), nil)
+			cloudA.awsClient.EXPECT().CreateRoute(context.TODO(), gomock.Any()).
+				Return(nil, nil)
+			cloudB.awsClient.EXPECT().DescribeRouteTables(context.TODO(), gomock.Any()).
+				Return(nil, errors.New("unable to create route for "+vpcB))
 
-				err := awsCloudA.createRoutesForPeering(awsCloudB, vpcA, vpcB, &peering, api.NewLoggingReporter())
+			err := awsCloudA.createRoutesForPeering(awsCloudB, vpcA, vpcB, &peering, api.NewLoggingReporter())
 
-				Expect(err).NotTo(BeNil())
-			})
-			It("should not get the accepter route table", func() {
-				cloudA.awsClient.EXPECT().DescribeRouteTables(context.TODO(), gomock.Any()).
-					Return(getRouteTableFor(vpcA), nil)
-				cloudA.awsClient.EXPECT().CreateRoute(context.TODO(), gomock.Any()).
-					Return(nil, nil)
-				cloudB.awsClient.EXPECT().DescribeRouteTables(context.TODO(), gomock.Any()).
-					Return(nil, errors.New("unable to create route for "+vpcB))
-
-				err := awsCloudA.createRoutesForPeering(awsCloudB, vpcA, vpcB, &peering, api.NewLoggingReporter())
-
-				Expect(err).NotTo(BeNil())
-			})
+			Expect(err).NotTo(BeNil())
 		})
 	})
 }
@@ -307,34 +301,32 @@ func testGetRouteTableID() {
 	var awsCloudA *awsCloud
 	var ok bool
 
-	Describe("Test Get Route Table ID", func() {
-		BeforeEach(func() {
-			awsCloudA, ok = cloudA.cloud.(*awsCloud)
-			Expect(ok).To(BeTrue())
+	BeforeEach(func() {
+		awsCloudA, ok = cloudA.cloud.(*awsCloud)
+		Expect(ok).To(BeTrue())
+	})
+	When("trying to get Route Table ID", func() {
+		It("should return a correct route table ID", func() {
+			cloudA.awsClient.EXPECT().DescribeRouteTables(context.TODO(), gomock.Any()).
+				Return(getRouteTableFor(vpcA), nil)
+
+			rtID, err := awsCloudA.getRouteTableID(vpcA, api.NewLoggingReporter())
+
+			Expect(err).To(BeNil())
+			Expect(rtID).ToNot(BeNil())
+			Expect(rtID).ToNot(Equal(vpcA + "-rt"))
 		})
-		When("trying to get Route Table ID", func() {
-			It("should return a correct route table ID", func() {
-				cloudA.awsClient.EXPECT().DescribeRouteTables(context.TODO(), gomock.Any()).
-					Return(getRouteTableFor(vpcA), nil)
+		It("should not return the route table ID", func() {
+			errMsg := "route table not found"
 
-				rtID, err := awsCloudA.getRouteTableID(vpcA, api.NewLoggingReporter())
+			cloudA.awsClient.EXPECT().DescribeRouteTables(context.TODO(), gomock.Any()).
+				Return(nil, errors.New(errMsg))
 
-				Expect(err).To(BeNil())
-				Expect(rtID).ToNot(BeNil())
-				Expect(rtID).ToNot(Equal(vpcA + "-rt"))
-			})
-			It("should not return the route table ID", func() {
-				errMsg := "route table not found"
+			rtID, err := awsCloudA.getRouteTableID("", api.NewLoggingReporter())
 
-				cloudA.awsClient.EXPECT().DescribeRouteTables(context.TODO(), gomock.Any()).
-					Return(nil, errors.New(errMsg))
-
-				rtID, err := awsCloudA.getRouteTableID("", api.NewLoggingReporter())
-
-				Expect(err).ToNot(BeNil())
-				Expect(err).To(MatchError(MatchRegexp(errMsg)))
-				Expect(rtID).To(BeNil())
-			})
+			Expect(err).ToNot(BeNil())
+			Expect(err).To(MatchError(MatchRegexp(errMsg)))
+			Expect(rtID).To(BeNil())
 		})
 	})
 }
@@ -346,158 +338,156 @@ func testCleanupVpcPeering() {
 	var awsCloudB *awsCloud
 	var ok bool
 
-	Describe("Test Clean up VPC Peering", func() {
-		BeforeEach(func() {
-			awsCloudA, ok = cloudA.cloud.(*awsCloud)
-			Expect(ok).To(BeTrue())
-			awsCloudB, ok = cloudB.cloud.(*awsCloud)
-			Expect(ok).To(BeTrue())
+	BeforeEach(func() {
+		awsCloudA, ok = cloudA.cloud.(*awsCloud)
+		Expect(ok).To(BeTrue())
+		awsCloudB, ok = cloudB.cloud.(*awsCloud)
+		Expect(ok).To(BeTrue())
+	})
+	When("the client fails to retrieve the vpcIDs", func() {
+		It("should return an error for the source VpcID", func() {
+			cloudA.awsClient.EXPECT().DescribeVpcs(context.TODO(), gomock.Any()).
+				Return(nil, errors.New("unable to describe source vpcs"))
+
+			err := awsCloudA.cleanupVpcPeering(awsCloudB, api.NewLoggingReporter())
+
+			Expect(err).To(HaveOccurred())
 		})
-		When("the client fails to retrieve the vpcIDs", func() {
-			It("should return an error for the source VpcID", func() {
-				cloudA.awsClient.EXPECT().DescribeVpcs(context.TODO(), gomock.Any()).
-					Return(nil, errors.New("unable to describe source vpcs"))
+		It("should return an error for the target VpcID", func() {
+			cloudA.awsClient.EXPECT().
+				DescribeVpcs(context.TODO(), gomock.Any()).
+				Return(getVpcOutputFor("vpc-a", "10.0.0.0/16"), nil)
+			cloudB.awsClient.EXPECT().DescribeVpcs(context.TODO(), gomock.Any()).
+				Return(nil, errors.New("unable to describe target vpcs"))
 
-				err := awsCloudA.cleanupVpcPeering(awsCloudB, api.NewLoggingReporter())
+			err := awsCloudA.cleanupVpcPeering(awsCloudB, api.NewLoggingReporter())
 
-				Expect(err).To(HaveOccurred())
-			})
-			It("should return an error for the target VpcID", func() {
-				cloudA.awsClient.EXPECT().
-					DescribeVpcs(context.TODO(), gomock.Any()).
-					Return(getVpcOutputFor("vpc-a", "10.0.0.0/16"), nil)
-				cloudB.awsClient.EXPECT().DescribeVpcs(context.TODO(), gomock.Any()).
-					Return(nil, errors.New("unable to describe target vpcs"))
-
-				err := awsCloudA.cleanupVpcPeering(awsCloudB, api.NewLoggingReporter())
-
-				Expect(err).To(HaveOccurred())
-			})
+			Expect(err).To(HaveOccurred())
 		})
-		When("the client fails to describe VPC peering connections", func() {
-			It("should return an error", func() {
-				mockDescribeVPCs(cloudA, cloudB)
-				cloudA.awsClient.EXPECT().DescribeVpcPeeringConnections(context.TODO(), gomock.Any()).
-					Return(nil, errors.New("unable to describe source vpcs"))
+	})
+	When("the client fails to describe VPC peering connections", func() {
+		It("should return an error", func() {
+			mockDescribeVPCs(cloudA, cloudB)
+			cloudA.awsClient.EXPECT().DescribeVpcPeeringConnections(context.TODO(), gomock.Any()).
+				Return(nil, errors.New("unable to describe source vpcs"))
 
-				err := awsCloudA.cleanupVpcPeering(awsCloudB, api.NewLoggingReporter())
+			err := awsCloudA.cleanupVpcPeering(awsCloudB, api.NewLoggingReporter())
 
-				Expect(err).To(HaveOccurred())
-			})
-			It("should not return any VPC Peering connection", func() {
-				mockDescribeVPCs(cloudA, cloudB)
-				cloudA.awsClient.EXPECT().DescribeVpcPeeringConnections(context.TODO(), gomock.Any()).
-					Return(&ec2.DescribeVpcPeeringConnectionsOutput{
-						VpcPeeringConnections: []types.VpcPeeringConnection{},
-					}, nil)
-
-				err := awsCloudA.cleanupVpcPeering(awsCloudB, api.NewLoggingReporter())
-
-				Expect(err).To(HaveOccurred())
-			})
+			Expect(err).To(HaveOccurred())
 		})
-		When("the client fails to delete routes", func() {
-			It("should return an error", func() {
-				vpcPeeringID := "vpc-peering-id"
-				mockDescribeVPCs(cloudA, cloudB)
-				cloudA.awsClient.EXPECT().DescribeVpcPeeringConnections(context.TODO(), gomock.Any()).
-					Return(&ec2.DescribeVpcPeeringConnectionsOutput{
-						VpcPeeringConnections: []types.VpcPeeringConnection{
-							{
-								VpcPeeringConnectionId: &vpcPeeringID,
+		It("should not return any VPC Peering connection", func() {
+			mockDescribeVPCs(cloudA, cloudB)
+			cloudA.awsClient.EXPECT().DescribeVpcPeeringConnections(context.TODO(), gomock.Any()).
+				Return(&ec2.DescribeVpcPeeringConnectionsOutput{
+					VpcPeeringConnections: []types.VpcPeeringConnection{},
+				}, nil)
+
+			err := awsCloudA.cleanupVpcPeering(awsCloudB, api.NewLoggingReporter())
+
+			Expect(err).To(HaveOccurred())
+		})
+	})
+	When("the client fails to delete routes", func() {
+		It("should return an error", func() {
+			vpcPeeringID := "vpc-peering-id"
+			mockDescribeVPCs(cloudA, cloudB)
+			cloudA.awsClient.EXPECT().DescribeVpcPeeringConnections(context.TODO(), gomock.Any()).
+				Return(&ec2.DescribeVpcPeeringConnectionsOutput{
+					VpcPeeringConnections: []types.VpcPeeringConnection{
+						{
+							VpcPeeringConnectionId: &vpcPeeringID,
+						},
+					},
+				}, nil)
+			cloudA.awsClient.EXPECT().DescribeRouteTables(context.TODO(), gomock.Any()).
+				Return(nil, errors.New("unable to describe route tables"))
+
+			err := awsCloudA.cleanupVpcPeering(awsCloudB, api.NewLoggingReporter())
+
+			Expect(err).To(HaveOccurred())
+		})
+		It("should not return any VPC Peering connection", func() {
+			mockDescribeVPCs(cloudA, cloudB)
+			cloudA.awsClient.EXPECT().DescribeVpcPeeringConnections(context.TODO(), gomock.Any()).
+				Return(&ec2.DescribeVpcPeeringConnectionsOutput{
+					VpcPeeringConnections: []types.VpcPeeringConnection{},
+				}, nil)
+
+			err := awsCloudA.cleanupVpcPeering(awsCloudB, api.NewLoggingReporter())
+
+			Expect(err).To(HaveOccurred())
+		})
+	})
+	When("the client fails to delete the vpc vpc peering connection", func() {
+		It("should return an error", func() {
+			vpcPeeringID := "vpc-peering-id"
+			cidrBlock := "10.1.0.0/16"
+			srcVpcID := "src-vpc-id"
+			targetVpcID := "target-vpc-id"
+			mockDescribeVPCs(cloudA, cloudB)
+			cloudA.awsClient.EXPECT().DescribeVpcPeeringConnections(context.TODO(), gomock.Any()).
+				Return(&ec2.DescribeVpcPeeringConnectionsOutput{
+					VpcPeeringConnections: []types.VpcPeeringConnection{
+						{
+							VpcPeeringConnectionId: &vpcPeeringID,
+							AccepterVpcInfo: &types.VpcPeeringConnectionVpcInfo{
+								VpcId:     &targetVpcID,
+								CidrBlock: &cidrBlock,
+							},
+							RequesterVpcInfo: &types.VpcPeeringConnectionVpcInfo{
+								VpcId:     &srcVpcID,
+								CidrBlock: &cidrBlock,
 							},
 						},
-					}, nil)
-				cloudA.awsClient.EXPECT().DescribeRouteTables(context.TODO(), gomock.Any()).
-					Return(nil, errors.New("unable to describe route tables"))
+					},
+				}, nil)
+			mockGetRouteTableID(cloudA)
+			mockGetRouteTableID(cloudB)
+			cloudA.awsClient.EXPECT().DeleteRoute(context.TODO(), gomock.Any()).
+				Return(nil, nil)
+			cloudB.awsClient.EXPECT().DeleteRoute(context.TODO(), gomock.Any()).
+				Return(nil, nil)
+			cloudA.awsClient.EXPECT().DeleteVpcPeeringConnection(context.TODO(), gomock.Any()).
+				Return(nil, errors.New("unable to remove vpc peering connection"))
 
-				err := awsCloudA.cleanupVpcPeering(awsCloudB, api.NewLoggingReporter())
+			err := awsCloudA.cleanupVpcPeering(awsCloudB, api.NewLoggingReporter())
 
-				Expect(err).To(HaveOccurred())
-			})
-			It("should not return any VPC Peering connection", func() {
-				mockDescribeVPCs(cloudA, cloudB)
-				cloudA.awsClient.EXPECT().DescribeVpcPeeringConnections(context.TODO(), gomock.Any()).
-					Return(&ec2.DescribeVpcPeeringConnectionsOutput{
-						VpcPeeringConnections: []types.VpcPeeringConnection{},
-					}, nil)
-
-				err := awsCloudA.cleanupVpcPeering(awsCloudB, api.NewLoggingReporter())
-
-				Expect(err).To(HaveOccurred())
-			})
+			Expect(err).To(HaveOccurred())
 		})
-		When("the client fails to delete the vpc vpc peering connection", func() {
-			It("should return an error", func() {
-				vpcPeeringID := "vpc-peering-id"
-				cidrBlock := "10.1.0.0/16"
-				srcVpcID := "src-vpc-id"
-				targetVpcID := "target-vpc-id"
-				mockDescribeVPCs(cloudA, cloudB)
-				cloudA.awsClient.EXPECT().DescribeVpcPeeringConnections(context.TODO(), gomock.Any()).
-					Return(&ec2.DescribeVpcPeeringConnectionsOutput{
-						VpcPeeringConnections: []types.VpcPeeringConnection{
-							{
-								VpcPeeringConnectionId: &vpcPeeringID,
-								AccepterVpcInfo: &types.VpcPeeringConnectionVpcInfo{
-									VpcId:     &targetVpcID,
-									CidrBlock: &cidrBlock,
-								},
-								RequesterVpcInfo: &types.VpcPeeringConnectionVpcInfo{
-									VpcId:     &srcVpcID,
-									CidrBlock: &cidrBlock,
-								},
+		It("should delete the routes and the VPC peering", func() {
+			vpcPeeringID := "vpc-peering-id"
+			cidrBlock := "10.1.0.0/16"
+			srcVpcID := "src-vpc-id"
+			targetVpcID := "target-vpc-id"
+			mockDescribeVPCs(cloudA, cloudB)
+			cloudA.awsClient.EXPECT().DescribeVpcPeeringConnections(context.TODO(), gomock.Any()).
+				Return(&ec2.DescribeVpcPeeringConnectionsOutput{
+					VpcPeeringConnections: []types.VpcPeeringConnection{
+						{
+							VpcPeeringConnectionId: &vpcPeeringID,
+							AccepterVpcInfo: &types.VpcPeeringConnectionVpcInfo{
+								VpcId:     &targetVpcID,
+								CidrBlock: &cidrBlock,
+							},
+							RequesterVpcInfo: &types.VpcPeeringConnectionVpcInfo{
+								VpcId:     &srcVpcID,
+								CidrBlock: &cidrBlock,
 							},
 						},
-					}, nil)
-				mockGetRouteTableID(cloudA)
-				mockGetRouteTableID(cloudB)
-				cloudA.awsClient.EXPECT().DeleteRoute(context.TODO(), gomock.Any()).
-					Return(nil, nil)
-				cloudB.awsClient.EXPECT().DeleteRoute(context.TODO(), gomock.Any()).
-					Return(nil, nil)
-				cloudA.awsClient.EXPECT().DeleteVpcPeeringConnection(context.TODO(), gomock.Any()).
-					Return(nil, errors.New("unable to remove vpc peering connection"))
+					},
+				}, nil)
+			mockGetRouteTableID(cloudA)
+			mockGetRouteTableID(cloudB)
+			cloudA.awsClient.EXPECT().DeleteRoute(context.TODO(), gomock.Any()).
+				Return(nil, nil)
+			cloudB.awsClient.EXPECT().DeleteRoute(context.TODO(), gomock.Any()).
+				Return(nil, nil)
+			cloudA.awsClient.EXPECT().DeleteVpcPeeringConnection(context.TODO(), gomock.Any()).
+				Return(nil, nil)
 
-				err := awsCloudA.cleanupVpcPeering(awsCloudB, api.NewLoggingReporter())
+			err := awsCloudA.cleanupVpcPeering(awsCloudB, api.NewLoggingReporter())
 
-				Expect(err).To(HaveOccurred())
-			})
-			It("should delete the routes and the VPC peering", func() {
-				vpcPeeringID := "vpc-peering-id"
-				cidrBlock := "10.1.0.0/16"
-				srcVpcID := "src-vpc-id"
-				targetVpcID := "target-vpc-id"
-				mockDescribeVPCs(cloudA, cloudB)
-				cloudA.awsClient.EXPECT().DescribeVpcPeeringConnections(context.TODO(), gomock.Any()).
-					Return(&ec2.DescribeVpcPeeringConnectionsOutput{
-						VpcPeeringConnections: []types.VpcPeeringConnection{
-							{
-								VpcPeeringConnectionId: &vpcPeeringID,
-								AccepterVpcInfo: &types.VpcPeeringConnectionVpcInfo{
-									VpcId:     &targetVpcID,
-									CidrBlock: &cidrBlock,
-								},
-								RequesterVpcInfo: &types.VpcPeeringConnectionVpcInfo{
-									VpcId:     &srcVpcID,
-									CidrBlock: &cidrBlock,
-								},
-							},
-						},
-					}, nil)
-				mockGetRouteTableID(cloudA)
-				mockGetRouteTableID(cloudB)
-				cloudA.awsClient.EXPECT().DeleteRoute(context.TODO(), gomock.Any()).
-					Return(nil, nil)
-				cloudB.awsClient.EXPECT().DeleteRoute(context.TODO(), gomock.Any()).
-					Return(nil, nil)
-				cloudA.awsClient.EXPECT().DeleteVpcPeeringConnection(context.TODO(), gomock.Any()).
-					Return(nil, nil)
-
-				err := awsCloudA.cleanupVpcPeering(awsCloudB, api.NewLoggingReporter())
-
-				Expect(err).ToNot(HaveOccurred())
-			})
+			Expect(err).ToNot(HaveOccurred())
 		})
 	})
 }
@@ -509,131 +499,129 @@ func testDeleteVpcPeeringRoutes() {
 	var awsCloudB *awsCloud
 	var ok bool
 
-	Describe("Test Delete VPC Peering routes", func() {
-		BeforeEach(func() {
-			awsCloudA, ok = cloudA.cloud.(*awsCloud)
-			Expect(ok).To(BeTrue())
-			awsCloudB, ok = cloudB.cloud.(*awsCloud)
-			Expect(ok).To(BeTrue())
+	BeforeEach(func() {
+		awsCloudA, ok = cloudA.cloud.(*awsCloud)
+		Expect(ok).To(BeTrue())
+		awsCloudB, ok = cloudB.cloud.(*awsCloud)
+		Expect(ok).To(BeTrue())
+	})
+	When("the client fails to get the source route table ID", func() {
+		It("should return an error", func() {
+			srcVpcID := "src-vpc-id"
+			targetVpcID := "target-vpc-id"
+
+			cloudA.awsClient.EXPECT().DescribeRouteTables(context.TODO(), gomock.Any()).
+				Return(nil, errors.New("unable to describe route table"))
+
+			err := awsCloudA.deleteVpcPeeringRoutes(awsCloudB, srcVpcID, targetVpcID,
+				&types.VpcPeeringConnection{}, api.NewLoggingReporter())
+
+			Expect(err).To(HaveOccurred())
 		})
-		When("the client fails to get the source route table ID", func() {
-			It("should return an error", func() {
-				srcVpcID := "src-vpc-id"
-				targetVpcID := "target-vpc-id"
+	})
+	When("the client fails to get delete the source route", func() {
+		It("should return an error", func() {
+			srcVpcID := "src-vpc-id"
+			targetVpcID := "target-vpc-id"
+			cidrBlock := "10.1.0.0/16"
 
-				cloudA.awsClient.EXPECT().DescribeRouteTables(context.TODO(), gomock.Any()).
-					Return(nil, errors.New("unable to describe route table"))
+			mockGetRouteTableID(cloudA)
+			cloudA.awsClient.EXPECT().DeleteRoute(context.TODO(), gomock.Any()).
+				Return(nil, errors.New("unable to delete route"))
 
-				err := awsCloudA.deleteVpcPeeringRoutes(awsCloudB, srcVpcID, targetVpcID,
-					&types.VpcPeeringConnection{}, api.NewLoggingReporter())
-
-				Expect(err).To(HaveOccurred())
-			})
-		})
-		When("the client fails to get delete the source route", func() {
-			It("should return an error", func() {
-				srcVpcID := "src-vpc-id"
-				targetVpcID := "target-vpc-id"
-				cidrBlock := "10.1.0.0/16"
-
-				mockGetRouteTableID(cloudA)
-				cloudA.awsClient.EXPECT().DeleteRoute(context.TODO(), gomock.Any()).
-					Return(nil, errors.New("unable to delete route"))
-
-				err := awsCloudA.deleteVpcPeeringRoutes(awsCloudB, srcVpcID, targetVpcID,
-					&types.VpcPeeringConnection{
-						RequesterVpcInfo: &types.VpcPeeringConnectionVpcInfo{
-							CidrBlock: &cidrBlock,
-						},
-						AccepterVpcInfo: &types.VpcPeeringConnectionVpcInfo{
-							CidrBlock: &cidrBlock,
-						},
+			err := awsCloudA.deleteVpcPeeringRoutes(awsCloudB, srcVpcID, targetVpcID,
+				&types.VpcPeeringConnection{
+					RequesterVpcInfo: &types.VpcPeeringConnectionVpcInfo{
+						CidrBlock: &cidrBlock,
 					},
-					api.NewLoggingReporter())
-
-				Expect(err).To(HaveOccurred())
-			})
-		})
-		When("the client fails to get the target route table ID", func() {
-			It("should return an error", func() {
-				srcVpcID := "src-vpc-id"
-				targetVpcID := "target-vpc-id"
-				cidrBlock := "10.1.0.0/16"
-
-				mockGetRouteTableID(cloudA)
-				cloudA.awsClient.EXPECT().DeleteRoute(context.TODO(), gomock.Any()).
-					Return(nil, nil)
-
-				cloudB.awsClient.EXPECT().DescribeRouteTables(context.TODO(), gomock.Any()).
-					Return(nil, errors.New("unable to describe route table"))
-
-				err := awsCloudA.deleteVpcPeeringRoutes(awsCloudB, srcVpcID, targetVpcID,
-					&types.VpcPeeringConnection{
-						RequesterVpcInfo: &types.VpcPeeringConnectionVpcInfo{
-							CidrBlock: &cidrBlock,
-						},
-						AccepterVpcInfo: &types.VpcPeeringConnectionVpcInfo{
-							CidrBlock: &cidrBlock,
-						},
+					AccepterVpcInfo: &types.VpcPeeringConnectionVpcInfo{
+						CidrBlock: &cidrBlock,
 					},
-					api.NewLoggingReporter())
+				},
+				api.NewLoggingReporter())
 
-				Expect(err).To(HaveOccurred())
-			})
+			Expect(err).To(HaveOccurred())
 		})
-		When("the client fails to get delete the target route", func() {
-			It("should return an error", func() {
-				srcVpcID := "src-vpc-id"
-				targetVpcID := "target-vpc-id"
-				cidrBlock := "10.1.0.0/16"
+	})
+	When("the client fails to get the target route table ID", func() {
+		It("should return an error", func() {
+			srcVpcID := "src-vpc-id"
+			targetVpcID := "target-vpc-id"
+			cidrBlock := "10.1.0.0/16"
 
-				mockGetRouteTableID(cloudA)
-				cloudA.awsClient.EXPECT().DeleteRoute(context.TODO(), gomock.Any()).
-					Return(nil, nil)
-				mockGetRouteTableID(cloudB)
-				cloudB.awsClient.EXPECT().DeleteRoute(context.TODO(), gomock.Any()).
-					Return(nil, errors.New("unable to delete target route"))
-				err := awsCloudA.deleteVpcPeeringRoutes(awsCloudB, srcVpcID, targetVpcID,
-					&types.VpcPeeringConnection{
-						RequesterVpcInfo: &types.VpcPeeringConnectionVpcInfo{
-							CidrBlock: &cidrBlock,
-						},
-						AccepterVpcInfo: &types.VpcPeeringConnectionVpcInfo{
-							CidrBlock: &cidrBlock,
-						},
+			mockGetRouteTableID(cloudA)
+			cloudA.awsClient.EXPECT().DeleteRoute(context.TODO(), gomock.Any()).
+				Return(nil, nil)
+
+			cloudB.awsClient.EXPECT().DescribeRouteTables(context.TODO(), gomock.Any()).
+				Return(nil, errors.New("unable to describe route table"))
+
+			err := awsCloudA.deleteVpcPeeringRoutes(awsCloudB, srcVpcID, targetVpcID,
+				&types.VpcPeeringConnection{
+					RequesterVpcInfo: &types.VpcPeeringConnectionVpcInfo{
+						CidrBlock: &cidrBlock,
 					},
-					api.NewLoggingReporter())
+					AccepterVpcInfo: &types.VpcPeeringConnectionVpcInfo{
+						CidrBlock: &cidrBlock,
+					},
+				},
+				api.NewLoggingReporter())
 
-				Expect(err).To(HaveOccurred())
-			})
+			Expect(err).To(HaveOccurred())
 		})
-		When("called with valid arguments and there are no errors", func() {
-			It("should delete the routes", func() {
-				srcVpcID := "src-vpc-id"
-				targetVpcID := "target-vpc-id"
-				cidrBlock := "10.1.0.0/16"
-				vpcID := "vpc-id"
+	})
+	When("the client fails to get delete the target route", func() {
+		It("should return an error", func() {
+			srcVpcID := "src-vpc-id"
+			targetVpcID := "target-vpc-id"
+			cidrBlock := "10.1.0.0/16"
 
-				mockGetRouteTableID(cloudA)
-				cloudA.awsClient.EXPECT().DeleteRoute(context.TODO(), gomock.Any()).
-					Return(nil, nil)
-				mockGetRouteTableID(cloudB)
-				cloudB.awsClient.EXPECT().DeleteRoute(context.TODO(), gomock.Any()).
-					Return(nil, nil)
-				err := awsCloudA.deleteVpcPeeringRoutes(awsCloudB, srcVpcID, targetVpcID,
-					&types.VpcPeeringConnection{
-						VpcPeeringConnectionId: &vpcID,
-						RequesterVpcInfo: &types.VpcPeeringConnectionVpcInfo{
-							CidrBlock: &cidrBlock,
-						},
-						AccepterVpcInfo: &types.VpcPeeringConnectionVpcInfo{
-							CidrBlock: &cidrBlock,
-						},
+			mockGetRouteTableID(cloudA)
+			cloudA.awsClient.EXPECT().DeleteRoute(context.TODO(), gomock.Any()).
+				Return(nil, nil)
+			mockGetRouteTableID(cloudB)
+			cloudB.awsClient.EXPECT().DeleteRoute(context.TODO(), gomock.Any()).
+				Return(nil, errors.New("unable to delete target route"))
+			err := awsCloudA.deleteVpcPeeringRoutes(awsCloudB, srcVpcID, targetVpcID,
+				&types.VpcPeeringConnection{
+					RequesterVpcInfo: &types.VpcPeeringConnectionVpcInfo{
+						CidrBlock: &cidrBlock,
 					},
-					api.NewLoggingReporter())
+					AccepterVpcInfo: &types.VpcPeeringConnectionVpcInfo{
+						CidrBlock: &cidrBlock,
+					},
+				},
+				api.NewLoggingReporter())
 
-				Expect(err).ToNot(HaveOccurred())
-			})
+			Expect(err).To(HaveOccurred())
+		})
+	})
+	When("called with valid arguments and there are no errors", func() {
+		It("should delete the routes", func() {
+			srcVpcID := "src-vpc-id"
+			targetVpcID := "target-vpc-id"
+			cidrBlock := "10.1.0.0/16"
+			vpcID := "vpc-id"
+
+			mockGetRouteTableID(cloudA)
+			cloudA.awsClient.EXPECT().DeleteRoute(context.TODO(), gomock.Any()).
+				Return(nil, nil)
+			mockGetRouteTableID(cloudB)
+			cloudB.awsClient.EXPECT().DeleteRoute(context.TODO(), gomock.Any()).
+				Return(nil, nil)
+			err := awsCloudA.deleteVpcPeeringRoutes(awsCloudB, srcVpcID, targetVpcID,
+				&types.VpcPeeringConnection{
+					VpcPeeringConnectionId: &vpcID,
+					RequesterVpcInfo: &types.VpcPeeringConnectionVpcInfo{
+						CidrBlock: &cidrBlock,
+					},
+					AccepterVpcInfo: &types.VpcPeeringConnectionVpcInfo{
+						CidrBlock: &cidrBlock,
+					},
+				},
+				api.NewLoggingReporter())
+
+			Expect(err).ToNot(HaveOccurred())
 		})
 	})
 }

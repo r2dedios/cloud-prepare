@@ -47,7 +47,7 @@ func (ac *awsCloud) getVpc() (*types.Vpc, error) {
 	}
 
 	if len(result.Vpcs) == 0 {
-		return nil, newNotFoundError("not found VPC %s", vpcName)
+		return nil, newNotFoundError("not VPC found for %q", vpcName)
 	}
 
 	return &result.Vpcs[0], nil

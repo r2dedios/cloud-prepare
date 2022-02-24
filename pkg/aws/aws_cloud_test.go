@@ -29,13 +29,11 @@ var _ = Describe("Cloud", func() {
 
 func testCreateVpcPeering() {
 	cloudA := newCloudTestDriver(infraID, region)
-	_ = Describe("VPC Peering", func() {
-		When("called with a non-AWS Cloud", func() {
-			It("should return an error", func() {
-				invalidCloud := &invalidCloud{}
-				err := cloudA.cloud.CreateVpcPeering(invalidCloud, api.NewLoggingReporter())
-				Expect(err).To(HaveOccurred())
-			})
+	When("called with a non-AWS Cloud", func() {
+		It("should return an error", func() {
+			invalidCloud := &invalidCloud{}
+			err := cloudA.cloud.CreateVpcPeering(invalidCloud, api.NewLoggingReporter())
+			Expect(err).To(HaveOccurred())
 		})
 	})
 }
